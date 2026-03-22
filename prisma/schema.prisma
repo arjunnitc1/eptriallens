@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("RESEARCHER_STAFF") // RESEARCHER_ADMIN | RESEARCHER_STAFF
+  createdAt    DateTime @default(now())
+
+  projects    Project[]
+  documents   Document[]
+  auditLogs   AuditLog[]
+}
+
+model Project {
+  id              String   @id @default(uuid())
+  name            String
+  therapeuticArea String   @default("")
+  trialPhase      String   @default("")
+  sponsor         String   @default("")
+  description     String   @default("")
+  languages       String   @default("English") // comma-separated
+  status          String   @default("DRAFT") // DRAFT | ACTIVE | COMPLETED | ARCHIVED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdById     String
+
+  createdBy    User          @relation(fields: [createdById], references: [id])
+  documents    Document[]
+  videos       Video[]
+  summary      Summary?
+  faqs         FAQ[]
+  patients     Patient[]
+  escalations  Escalation[]
+  auditLogs    AuditLog[]
+  consents     Consent[]
+  chatMessages ChatMessage[]
+}
+
+model Document {
+  id           String   @id @default(uuid())
+  projectId    String
+  type         String   // PI_SHEET | PROTOCOL | PATIENT_CONTRACT
+  filename     String
+  filepath     String
+  version      Int      @default(1)
+  uploadedAt   DateTime @default(now())
+  uploadedById String
+
+  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  uploadedBy User     @relation(fields: [uploadedById], references: [id])
+  consents   Consent[]
+}
+
+model Video {
+  id         String   @id @default(uuid())
+  projectId  String
+  sourceType String   // UPLOADED | EXTERNAL_URL
+  filepath   String   @default("")
+  url        String   @default("")
+  title      String   @default("")
+  createdAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Summary {
+  id        String   @id @default(uuid())
+  projectId String   @unique
+  sections  String   @default("{}") // JSON string with keys: why, what, risks, timeline, next
+  updatedAt DateTime @updatedAt
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model FAQ {
+  id         String   @id @default(uuid())
+  projectId  String
+  question   String
+  answer     String
+  orderIndex Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Patient {
+  id                String   @id @default(uuid())
+  projectId         String
+  patientDisplayId  String   @default("") // Randomised patient ID e.g. PT-A3F8K2
+  firstName         String   @default("") // Optional for anonymous patients
+  lastName          String   @default("") // Optional for anonymous patients
+  email             String   @default("") // Optional for anonymous patients
+  phone             String   @default("")
+  patientExternalId String   @default("")
+  privacyMode       String   @default("NON_ANONYMOUS") // ANONYMOUS | NON_ANONYMOUS
+  outreachMethod    String   @default("DIRECT_OUTREACH") // NHS_DIGITRIALS | DIRECT_OUTREACH
+  inviteToken       String?  @unique
+  inviteStatus      String   @default("PENDING") // PENDING | SENT | OPENED
+  consentStatus     String   @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | CONSENTED
+  lastActivity      DateTime?
+  createdAt         DateTime @default(now())
+
+  project      Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  consents     Consent[]
+  escalations  Escalation[]
+  chatMessages ChatMessage[]
+}
+
+model Consent {
+  id               String   @id @default(uuid())
+  patientId        String
+  projectId        String
+  readUnderstood   Boolean  @default(false)
+  acceptTerms      Boolean  @default(false)
+  signatureName    String   @default("")
+  signatureData    String   @default("") // base64 drawn signature or empty
+  signedAt         DateTime @default(now())
+  contractDocId    String?
+
+  patient      Patient   @relation(fields: [patientId], references: [id])
+  project      Project   @relation(fields: [projectId], references: [id])
+  contractDoc  Document? @relation(fields: [contractDocId], references: [id])
+}
+
+model Escalation {
+  id            String    @id @default(uuid())
+  patientId     String
+  projectId     String
+  message       String
+  status        String    @default("NEW") // NEW | IN_PROGRESS | RESOLVED
+  staffResponse String    @default("")
+  createdAt     DateTime  @default(now())
+  resolvedAt    DateTime?
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  action     String   // DOCUMENT_UPLOAD | PATIENT_INVITE | CONSENT_SUBMITTED | ESCALATION_SUBMITTED | STAFF_RESPONSE | PROJECT_CREATED
+  entityType String   // Project | Document | Patient | Consent | Escalation
+  entityId   String
+  userId     String?
+  patientId  String?
+  projectId  String?
+  details    String   @default("")
+  createdAt  DateTime @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  patientId String
+  projectId String
+  role      String   // USER | ASSISTANT
+  content   String
+  createdAt DateTime @default(now())
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+}
