@@ -34,4 +34,3 @@ prisma/dev.db-journal
 
 # uploads
 /uploads/
-/public/demo/*.mp4
