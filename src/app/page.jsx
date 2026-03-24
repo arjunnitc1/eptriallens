@@ -185,7 +185,7 @@ export default function LandingPage() {
                     <p style={{ color: 'rgba(255,255,255,0.8)', marginBottom: 'var(--space-8)', fontSize: 'var(--text-lg)', maxWidth: '600px', margin: '0 auto var(--space-8)' }}>
                         Get in touch to see Trial Lens in action and discuss how it can help your trials.
                     </p>
-                    <a href="mailto:hello@triallens.io" className="btn btn-lg" style={{ background: '#fff', color: 'var(--color-primary)', fontWeight: 700 }}>
+                    <a href="mailto:arjun.arun.mba25@said.oxford.edu" className="btn btn-lg" style={{ background: '#fff', color: 'var(--color-primary)', fontWeight: 700 }}>
                         Request a demo
                     </a>
                 </div>
@@ -204,7 +204,7 @@ export default function LandingPage() {
                         <div style={s.footerLinks}>
                             <a href="#" style={s.footerLink}>Privacy Policy</a>
                             <a href="#" style={s.footerLink}>Terms of Use</a>
-                            <a href="mailto:hello@triallens.io" style={s.footerLink}>Contact</a>
+                            <a href="mailto:arjun.arun.mba25@said.oxford.edu" style={s.footerLink}>Contact</a>
                         </div>
                     </div>
                     <div style={s.footerDisclaimer}>
