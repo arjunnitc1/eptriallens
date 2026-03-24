@@ -5,13 +5,6 @@ import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import Logo from '@/components/Logo';
 
-export const viewport = {
-    width: 1024,
-    initialScale: 0.1,
-    maximumScale: 5,
-    userScalable: true,
-};
-
 export default function DashboardLayout({ children }) {
     const { data: session } = useSession();
     const pathname = usePathname();
