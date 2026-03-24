@@ -40,18 +40,18 @@ export default function LandingPage() {
     return (
         <div>
             {/* ─── Navigation ─── */}
-            <nav style={s.nav}>
-                <div style={s.navInner} className="container">
+            <nav style={s.nav} className="nav-container">
+                <div style={s.navInner} className="container nav-inner">
                     <Logo size="md" />
-                    <div style={s.navLinks}>
-                        <Link href="/auth/sign-in" className="btn btn-ghost btn-sm">Sign in</Link>
+                    <div style={s.navLinks} className="nav-links">
+                        <Link href="/auth/sign-in" className="btn btn-ghost btn-sm nav-hide-mobile">Sign in</Link>
                         <Link href="#demo" className="btn btn-primary btn-sm">Request a demo</Link>
                     </div>
                 </div>
             </nav>
 
             {/* ─── Hero ─── */}
-            <section style={s.hero} id="hero">
+            <section style={s.hero} className="hero-section" id="hero">
                 <div style={s.heroGlow} />
                 <div style={s.heroContent} className="container">
                     <div style={s.heroBadge}>
@@ -341,7 +341,7 @@ const s = {
     },
     problemGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))',
         gap: 'var(--space-6)',
     },
     problemCard: {
@@ -357,7 +357,7 @@ const s = {
     },
     statsGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
         gap: 'var(--space-6)',
         marginBottom: 'var(--space-6)',
     },
@@ -388,7 +388,7 @@ const s = {
     },
     stepsGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))',
         gap: 'var(--space-6)',
     },
     stepCard: {
@@ -419,7 +419,7 @@ const s = {
     },
     featuresGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))',
         gap: 'var(--space-6)',
     },
     featureCard: {
@@ -444,15 +444,17 @@ const s = {
     },
     footerInner: {
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-        flexWrap: 'wrap',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
         gap: 'var(--space-8)',
         marginBottom: 'var(--space-8)',
     },
     footerLinks: {
         display: 'flex',
-        gap: 'var(--space-6)',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: 'var(--space-4)',
         flexWrap: 'wrap',
     },
     footerLink: {

@@ -127,12 +127,12 @@ const s = {
     },
     loadingGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
         gap: 'var(--space-6)',
     },
     projectGrid: {
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 340px), 1fr))',
         gap: 'var(--space-6)',
     },
     projectCard: {

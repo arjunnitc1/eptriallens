@@ -16,15 +16,15 @@ export default function DashboardLayout({ children }) {
     return (
         <div style={s.layout}>
             {/* Sidebar */}
-            <aside style={s.sidebar}>
-                <div style={s.sidebarHeader}>
+            <aside style={s.sidebar} className="dashboard-sidebar">
+                <div style={s.sidebarHeader} className="dashboard-sidebar-header">
                     <Link href="/dashboard" style={{ textDecoration: 'none' }}>
                         <Logo size="sm" />
                     </Link>
                     <span style={s.portalBadge}>Portal</span>
                 </div>
 
-                <nav style={s.nav}>
+                <nav style={s.nav} className="dashboard-nav">
                     {navItems.map((item) => (
                         <Link
                             key={item.href}
@@ -33,6 +33,7 @@ export default function DashboardLayout({ children }) {
                                 ...s.navItem,
                                 ...(pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href)) ? s.navItemActive : {}),
                             }}
+                            className="dashboard-nav-item"
                         >
                             <span>{item.icon}</span>
                             <span>{item.label}</span>
@@ -40,7 +41,7 @@ export default function DashboardLayout({ children }) {
                     ))}
                 </nav>
 
-                <div style={s.sidebarFooter}>
+                <div style={s.sidebarFooter} className="dashboard-footer">
                     {session?.user && (
                         <div style={s.userInfo}>
                             <div style={s.avatar}>
@@ -61,7 +62,7 @@ export default function DashboardLayout({ children }) {
             </aside>
 
             {/* Main Content */}
-            <main style={s.main}>
+            <main style={s.main} className="dashboard-main">
                 {children}
             </main>
         </div>

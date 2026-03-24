@@ -191,6 +191,7 @@ const s = {
     },
     row: {
         display: 'flex',
+        flexWrap: 'wrap',
         gap: 'var(--space-4)',
     },
     actions: {

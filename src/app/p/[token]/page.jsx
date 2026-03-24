@@ -1373,7 +1373,7 @@ const sec = {
     },
     videoContainer: {
         width: '100%',
-        height: '420px',
+        aspectRatio: '16/9',
         borderRadius: 'var(--radius-lg)',
         background: '#000',
         overflow: 'hidden',
@@ -1443,7 +1443,7 @@ const docStyle = {
         alignItems: 'flex-start',
         gap: '8px',
         marginBottom: '8px',
-        maxWidth: '90%',
+        maxWidth: '100%',
     },
     miniAvatar: {
         width: '32px',
