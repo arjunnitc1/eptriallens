@@ -393,16 +393,15 @@ function VideoSummaryTab({ projectId, project, onRefresh }) {
                     <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)' }}>No video configured. Upload a video or add an external URL.</p>
                 )}
 
-                {/* Coming soon placeholder */}
+                {/* Video generation feature */}
                 <div style={s.comingSoon}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                         <span style={{ opacity: 0.5 }}>🤖</span>
                         <div>
                             <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>Generate video from documents</span>
-                            <span className="badge badge-neutral" style={{ marginLeft: 'var(--space-2)' }}>Coming soon</span>
                         </div>
                     </div>
-                    <button className="btn btn-ghost btn-sm" disabled>Enable</button>
+                    <button className="btn btn-ghost btn-sm">Enable</button>
                 </div>
             </div>
 
