@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams } from 'next/navigation';
 import Logo from '@/components/Logo';
+import translations from '@/lib/translations';
 
 export default function PatientPage() {
     const { token } = useParams();
@@ -10,59 +11,75 @@ export default function PatientPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [quizPassed, setQuizPassed] = useState(false);
+    const [lang, setLang] = useState('en');
+    const [a11y, setA11y] = useState({ fontSize: 0, highContrast: false, dyslexiaFont: false, reducedMotion: false });
+
+    const t = translations[lang];
 
     useEffect(() => {
-        fetch(`/api/patient/${token}`)
+        fetch(`/api/patient/${token}`, { cache: 'no-store' })
             .then((r) => { if (!r.ok) throw new Error('Invalid link'); return r.json(); })
             .then((d) => { setData(d); setLoading(false); })
             .catch((e) => { setError(e.message); setLoading(false); });
     }, [token]);
 
-    if (loading) return <div style={page.loading}><Logo size="lg" /><p style={{ marginTop: 16, color: 'var(--color-muted)' }}>Loading your information…</p></div>;
-    if (error || !data) return <div style={page.loading}><Logo size="lg" /><h2 style={{ marginTop: 16 }}>Link not valid</h2><p style={{ color: 'var(--color-muted)' }}>This link may have expired or is invalid. Please contact your research team.</p></div>;
+    const wrapperClasses = [
+        a11y.fontSize === 1 ? 'a11y-large-text-1' : '',
+        a11y.fontSize === 2 ? 'a11y-large-text-2' : '',
+        a11y.highContrast ? 'a11y-high-contrast' : '',
+        a11y.dyslexiaFont ? 'a11y-dyslexia' : '',
+        a11y.reducedMotion ? 'a11y-reduced-motion' : '',
+    ].filter(Boolean).join(' ');
+
+    if (loading) return <div style={page.loading}><Logo size="lg" /><p style={{ marginTop: 16, color: 'var(--color-muted)' }}>{t.loading}</p></div>;
+    if (error || !data) return <div style={page.loading}><Logo size="lg" /><h2 style={{ marginTop: 16 }}>{t.errorTitle}</h2><p style={{ color: 'var(--color-muted)' }}>{t.errorBody}</p></div>;
 
     return (
-        <div style={page.wrapper}>
+        <div style={page.wrapper} className={wrapperClasses} lang={lang}>
             <meta name="robots" content="noindex, nofollow" />
 
             {/* Header */}
             <header style={page.header}>
                 <Logo size="sm" />
                 <span style={page.projectName}>{data.project.name}</span>
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <LanguageSelector lang={lang} setLang={setLang} t={t} />
+                    <AccessibilityToolbar a11y={a11y} setA11y={setA11y} t={t} />
+                </div>
             </header>
 
             <main style={page.main}>
                 {/* Welcome card */}
-                <WelcomeCard data={data} />
+                <WelcomeCard data={data} t={t} />
 
                 {/* Video */}
-                <VideoSection video={data.video} />
+                <VideoSection video={data.video} t={t} />
 
                 {/* Summary (with per-point videos) */}
-                <SummarySection summary={data.summary} summaryVideos={data.summaryVideos} />
+                <SummarySection summary={data.summary} summaryVideos={data.summaryVideos} t={t} />
 
                 {/* Original trial information document */}
-                <TrialDocumentSection trialDocument={data.trialDocument} projectName={data.project.name} />
+                <TrialDocumentSection trialDocument={data.trialDocument} projectName={data.project.name} t={t} />
 
                 {/* FAQs */}
-                <FAQSection faqs={data.faqs} />
+                <FAQSection faqs={data.faqs} t={t} lang={lang} />
 
                 {/* Chat assistant */}
-                <ChatSection token={token} />
+                <ChatSection token={token} t={t} lang={lang} />
 
                 {/* Documents */}
-                <DocumentsSection documents={data.documents} />
+                <DocumentsSection documents={data.documents} t={t} />
 
                 {/* Comprehension quiz */}
-                <QuizSection questions={data.quizQuestions} onPass={() => setQuizPassed(true)} passed={quizPassed} />
+                <QuizSection questions={data.quizQuestions} onPass={() => setQuizPassed(true)} passed={quizPassed} t={t} lang={lang} />
 
                 {/* Consent */}
-                {!data.hasConsented && <ConsentSection token={token} data={data} quizPassed={quizPassed} />}
+                {!data.hasConsented && <ConsentSection token={token} data={data} quizPassed={quizPassed} t={t} />}
                 {data.hasConsented && (
                     <section className="card" style={{ textAlign: 'center', borderColor: 'var(--color-success)', borderWidth: 2 }}>
                         <div style={{ fontSize: '2rem', marginBottom: 8 }}>✅</div>
-                        <h3 style={{ color: 'var(--color-success)' }}>Consent submitted</h3>
-                        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)' }}>Thank you for providing your consent. The clinical team has been notified.</p>
+                        <h3 style={{ color: 'var(--color-success)' }}>{t.consentAlreadyTitle}</h3>
+                        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)' }}>{t.consentAlreadyBody}</p>
                     </section>
                 )}
             </main>
@@ -71,40 +88,131 @@ export default function PatientPage() {
             <footer style={page.footer}>
                 <div className="safety-banner" style={{ marginBottom: 16 }}>
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                    <span>This platform provides information about the study only and does not constitute medical advice.</span>
+                    <span>{t.footerDisclaimer}</span>
                 </div>
                 <Logo size="sm" />
                 <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', marginTop: 8, lineHeight: 1.6 }}>
-                    Privacy notice placeholder · Data retention placeholder · © {new Date().getFullYear()} Trial Lens
+                    {t.footerPrivacy} · © {new Date().getFullYear()} Trial Lens
                 </p>
             </footer>
         </div>
     );
 }
 
+/* ─── Language Selector ─── */
+function LanguageSelector({ lang, setLang, t }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+    const langs = [{ code: 'en', label: 'English', flag: '🇬🇧' }, { code: 'es', label: 'Español', flag: '🇪🇸' }, { code: 'fr', label: 'Français', flag: '🇫🇷' }];
+    const current = langs.find(l => l.code === lang);
+
+    useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    return (
+        <div ref={ref} style={{ position: 'relative' }}>
+            <button
+                onClick={() => setOpen(!open)}
+                className="a11y-toolbar-btn"
+                aria-label={t.langLabel}
+                title={t.langLabel}
+            >
+                <span style={{ fontSize: '16px' }}>{current.flag}</span>
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600 }}>{current.code.toUpperCase()}</span>
+                <span style={{ fontSize: '10px', marginLeft: 2 }}>▼</span>
+            </button>
+            {open && (
+                <div className="a11y-dropdown" style={{ minWidth: 140 }}>
+                    {langs.map(l => (
+                        <button
+                            key={l.code}
+                            className={`a11y-dropdown-item ${l.code === lang ? 'active' : ''}`}
+                            onClick={() => { setLang(l.code); setOpen(false); }}
+                        >
+                            <span>{l.flag}</span> {l.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    );
+}
+
+/* ─── Accessibility Toolbar ─── */
+function AccessibilityToolbar({ a11y, setA11y, t }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef(null);
+
+    useEffect(() => {
+        const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+        document.addEventListener('mousedown', handler);
+        return () => document.removeEventListener('mousedown', handler);
+    }, []);
+
+    const toggle = (key) => setA11y(prev => ({ ...prev, [key]: !prev[key] }));
+    const cycleFontSize = () => setA11y(prev => ({ ...prev, fontSize: (prev.fontSize + 1) % 3 }));
+    const fontLabels = ['A', 'A+', 'A++'];
+
+    return (
+        <div ref={ref} style={{ position: 'relative' }}>
+            <button
+                onClick={() => setOpen(!open)}
+                className="a11y-toolbar-btn"
+                aria-label={t.a11yTitle}
+                title={t.a11yTitle}
+            >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8a1 1 0 1 0 0-2 1 1 0 0 0 0 2Z" fill="currentColor" stroke="none"/><path d="M9 10h6"/><path d="M12 10v8"/><path d="M9 18h6"/></svg>
+                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, marginLeft: 2 }}>{t.a11yTitle}</span>
+            </button>
+            {open && (
+                <div className="a11y-dropdown" style={{ minWidth: 220 }}>
+                    <div className="a11y-dropdown-header">{t.a11yTitle}</div>
+                    <button className="a11y-dropdown-item" onClick={cycleFontSize}>
+                        <span style={{ fontWeight: 700, width: 28, textAlign: 'center' }}>{fontLabels[a11y.fontSize]}</span>
+                        <span>{t.a11yFontSize}</span>
+                    </button>
+                    <button className={`a11y-dropdown-item ${a11y.highContrast ? 'active' : ''}`} onClick={() => toggle('highContrast')}>
+                        <span style={{ fontSize: '16px' }}>◐</span>
+                        <span>{t.a11yHighContrast}</span>
+                    </button>
+                    <button className={`a11y-dropdown-item ${a11y.dyslexiaFont ? 'active' : ''}`} onClick={() => toggle('dyslexiaFont')}>
+                        <span style={{ fontSize: '14px', fontWeight: 700 }}>Aa</span>
+                        <span>{t.a11yDyslexiaFont}</span>
+                    </button>
+                    <button className={`a11y-dropdown-item ${a11y.reducedMotion ? 'active' : ''}`} onClick={() => toggle('reducedMotion')}>
+                        <span style={{ fontSize: '16px' }}>⏸</span>
+                        <span>{t.a11yReducedMotion}</span>
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
 /* ─── Welcome Card ─── */
-function WelcomeCard({ data }) {
+function WelcomeCard({ data, t }) {
     return (
         <section className="card" style={{ background: 'linear-gradient(135deg, rgba(0,180,216,0.05) 0%, rgba(72,202,228,0.05) 100%)', borderColor: 'rgba(0,180,216,0.2)' }}>
             <h2 style={{ fontSize: 'var(--text-2xl)', marginBottom: 8 }}>
-                Welcome{data.firstName ? `, ${data.firstName}` : ''} 👋
+                {t.welcomeGreeting}{data.firstName ? `, ${data.firstName}` : ''} 👋
             </h2>
             <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 'var(--leading-relaxed)' }}>
-                This page contains all the information you need about the <strong>{data.project.name}</strong> study.
-                Take your time to watch the video, read the summary, and explore the FAQs. If you have any questions,
-                our chat assistant is here to help, or you can contact the clinical team directly.
+                {t.welcomeBody(data.project.name)}
             </p>
         </section>
     );
 }
 
 /* ─── Video Section ─── */
-function VideoSection({ video }) {
+function VideoSection({ video, t }) {
     if (!video) return null;
 
     return (
         <section>
-            <h3 style={sec.heading}>🎬 Study explainer video</h3>
+            <h3 style={sec.heading}>{t.videoHeading}</h3>
             <div style={sec.videoContainer}>
                 {video.sourceType === 'EXTERNAL_URL' && video.url ? (
                     <iframe
@@ -124,7 +232,6 @@ function VideoSection({ video }) {
                         }}
                     >
                         <source src={video.filepath} type="video/mp4" />
-                        Your browser does not support the video element.
                     </video>
                 )}
             </div>
@@ -134,7 +241,7 @@ function VideoSection({ video }) {
 }
 
 /* ─── Summary Video Card ─── */
-function SummaryVideoCard({ video, sectionKey }) {
+function SummaryVideoCard({ video, sectionKey, t }) {
     const gradients = {
         why: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         what: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
@@ -173,8 +280,8 @@ function SummaryVideoCard({ video, sectionKey }) {
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3" /></svg>
                     </div>
                     <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: 'var(--text-sm)', fontWeight: 600 }}>{video.title}</p>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'var(--text-xs)', marginTop: 4 }}>Video explainer · {video.duration}</p>
-                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: 12, fontStyle: 'italic' }}>Video content would play here in production</p>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 'var(--text-xs)', marginTop: 4 }}>{t.summaryVideoExplainer} · {video.duration}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '11px', marginTop: 12, fontStyle: 'italic' }}>{t.summaryVideoProduction}</p>
                 </div>
             ) : (
                 <>
@@ -194,7 +301,7 @@ function SummaryVideoCard({ video, sectionKey }) {
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{video.title}</div>
-                        <div style={{ fontSize: 'var(--text-xs)', opacity: 0.85, marginTop: '2px' }}>▶ Watch explainer · {video.duration}</div>
+                        <div style={{ fontSize: 'var(--text-xs)', opacity: 0.85, marginTop: '2px' }}>{t.summaryWatchExplainer} · {video.duration}</div>
                     </div>
                 </>
             )}
@@ -203,13 +310,14 @@ function SummaryVideoCard({ video, sectionKey }) {
 }
 
 /* ─── Summary Section ─── */
-function SummarySection({ summary, summaryVideos }) {
+function SummarySection({ summary, summaryVideos, t }) {
+    const summaryLabelMap = { why: t.summaryWhy, what: t.summaryWhat, risks: t.summaryRisks, timeline: t.summaryTimeline, next: t.summaryNext };
     const sectionConfig = [
-        { key: 'why', label: 'Why this trial', icon: '🔬' },
-        { key: 'what', label: 'What participation involves', icon: '📋' },
-        { key: 'risks', label: 'Risks and benefits', icon: '⚖️' },
-        { key: 'timeline', label: 'Timeline and visits', icon: '📅' },
-        { key: 'next', label: 'What happens next', icon: '➡️' },
+        { key: 'why', icon: '🔬' },
+        { key: 'what', icon: '📋' },
+        { key: 'risks', icon: '⚖️' },
+        { key: 'timeline', icon: '📅' },
+        { key: 'next', icon: '➡️' },
     ];
 
     const [openSections, setOpenSections] = useState({});
@@ -223,9 +331,9 @@ function SummarySection({ summary, summaryVideos }) {
 
     return (
         <section>
-            <h3 style={sec.heading}>📖 Study information summary</h3>
+            <h3 style={sec.heading}>{t.summaryHeading}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {sectionConfig.map(({ key, label, icon }) => {
+                {sectionConfig.map(({ key, icon }) => {
                     if (!summary[key]) return null;
                     const isOpen = openSections[key];
                     const video = summaryVideos?.[key];
@@ -236,15 +344,15 @@ function SummarySection({ summary, summaryVideos }) {
                                 aria-expanded={isOpen}
                                 onClick={() => toggle(key)}
                             >
-                                <span>{icon} {label}</span>
+                                <span>{icon} {summaryLabelMap[key]}</span>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                    {video && <span style={{ fontSize: '0.65rem', background: 'rgba(0,180,216,0.1)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>🎬 Video</span>}
+                                    {video && <span style={{ fontSize: '0.65rem', background: 'rgba(0,180,216,0.1)', color: 'var(--color-primary)', padding: '2px 8px', borderRadius: 10, fontWeight: 600 }}>🎬 {t.summaryVideo}</span>}
                                     <span className="chevron" style={{ fontSize: '0.8rem' }}>{isOpen ? '▲' : '▼'}</span>
                                 </span>
                             </button>
                             {isOpen && (
                                 <div className="accordion-content">
-                                    <SummaryVideoCard video={video} sectionKey={key} />
+                                    <SummaryVideoCard video={video} sectionKey={key} t={t} />
                                     <div style={{ whiteSpace: 'pre-line' }}>{summary[key]}</div>
                                 </div>
                             )}
@@ -257,14 +365,14 @@ function SummarySection({ summary, summaryVideos }) {
 }
 
 /* ─── Trial Document Section ─── */
-function TrialDocumentSection({ trialDocument, projectName }) {
+function TrialDocumentSection({ trialDocument, projectName, t }) {
     const [isExpanded, setIsExpanded] = useState(false);
 
     if (!trialDocument) return null;
 
     return (
         <section>
-            <h3 style={sec.heading}>📋 Original trial information document</h3>
+            <h3 style={sec.heading}>{t.trialDocHeading}</h3>
             <div className="card">
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
                     <div style={{ flex: 1, minWidth: 200 }}>
@@ -283,12 +391,12 @@ function TrialDocumentSection({ trialDocument, projectName }) {
                             }}>📄</div>
                             <div>
                                 <h4 style={{ fontSize: 'var(--text-base)' }}>{projectName}</h4>
-                                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', marginTop: 2 }}>Full participant information sheet &amp; study guide</p>
+                                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', marginTop: 2 }}>{t.trialDocSubtitle}</p>
                             </div>
                         </div>
                     </div>
                     <button className="btn btn-ghost btn-sm" onClick={() => setIsExpanded(!isExpanded)} style={{ flexShrink: 0 }}>
-                        {isExpanded ? '▲ Collapse' : '▼ View document'}
+                        {isExpanded ? t.trialDocCollapse : t.trialDocView}
                     </button>
                 </div>
 
@@ -314,14 +422,14 @@ function TrialDocumentSection({ trialDocument, projectName }) {
                         rel="noopener noreferrer"
                         className="btn btn-ghost btn-sm"
                     >
-                        ↗ Open in new tab
+                        {t.trialDocOpenTab}
                     </a>
                     <a
                         href={trialDocument}
                         download
                         className="btn btn-ghost btn-sm"
                     >
-                        ⬇ Download
+                        {t.trialDocDownload}
                     </a>
                 </div>
             </div>
@@ -330,45 +438,54 @@ function TrialDocumentSection({ trialDocument, projectName }) {
 }
 
 /* ─── FAQ Section ─── */
-function FAQSection({ faqs }) {
+function FAQSection({ faqs, t, lang }) {
     const [search, setSearch] = useState('');
     const [openFaq, setOpenFaq] = useState(null);
 
     if (!faqs || faqs.length === 0) return null;
 
     const filtered = search
-        ? faqs.filter(f => f.question.toLowerCase().includes(search.toLowerCase()) || f.answer.toLowerCase().includes(search.toLowerCase()))
+        ? faqs.filter(f => {
+              const qStr = f.question[lang] || f.question.en || f.question;
+              const aStr = f.answer[lang] || f.answer.en || f.answer;
+              return qStr.toLowerCase().includes(search.toLowerCase()) || 
+                     aStr.toLowerCase().includes(search.toLowerCase());
+          })
         : faqs;
 
     return (
         <section>
-            <h3 style={sec.heading}>❓ Frequently asked questions</h3>
+            <h3 style={sec.heading}>{t.faqHeading}</h3>
             <input
                 className="form-input"
-                placeholder="Search FAQs…"
+                placeholder={t.faqSearchPlaceholder}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{ marginBottom: 12 }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {filtered.map((faq) => (
-                    <div key={faq.id} className="accordion-item">
-                        <button
-                            className="accordion-trigger"
-                            aria-expanded={openFaq === faq.id}
-                            onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
-                        >
-                            <span>{faq.question}</span>
-                            <span className="chevron" style={{ fontSize: '0.8rem' }}>{openFaq === faq.id ? '▲' : '▼'}</span>
-                        </button>
-                        {openFaq === faq.id && (
-                            <div className="accordion-content">{faq.answer}</div>
-                        )}
-                    </div>
-                ))}
+                {filtered.map((faq) => {
+                    const qStr = faq.question[lang] || faq.question.en || faq.question;
+                    const aStr = faq.answer[lang] || faq.answer.en || faq.answer;
+                    return (
+                        <div key={faq.id} className="accordion-item">
+                            <button
+                                className="accordion-trigger"
+                                aria-expanded={openFaq === faq.id}
+                                onClick={() => setOpenFaq(openFaq === faq.id ? null : faq.id)}
+                            >
+                                <span>{qStr}</span>
+                                <span className="chevron" style={{ fontSize: '0.8rem' }}>{openFaq === faq.id ? '▲' : '▼'}</span>
+                            </button>
+                            {openFaq === faq.id && (
+                                <div className="accordion-content">{aStr}</div>
+                            )}
+                        </div>
+                    );
+                })}
                 {filtered.length === 0 && (
                     <p style={{ textAlign: 'center', color: 'var(--color-muted)', padding: 16, fontSize: 'var(--text-sm)' }}>
-                        No FAQs match your search. Try different keywords or ask the assistant below.
+                        {t.faqNoResults}
                     </p>
                 )}
             </div>
@@ -417,10 +534,19 @@ function TypingBubble({ text, onTypingChange }) {
 }
 
 /* ─── Chat Section ─── */
-function ChatSection({ token }) {
+function ChatSection({ token, t, lang }) {
     const [messages, setMessages] = useState([
-        { role: 'assistant', content: "Hello! I'm Dr. Lens, your study information assistant. I can help answer questions about this trial based on the provided materials. What would you like to know?", typed: true, spoken: true },
+        { role: 'assistant', content: t.chatGreeting, typed: true, spoken: true },
     ]);
+
+    useEffect(() => {
+        setMessages(prev => {
+            if (prev.length === 1 && prev[0].role === 'assistant') {
+                return [{ ...prev[0], content: t.chatGreeting }];
+            }
+            return prev;
+        });
+    }, [t.chatGreeting]);
     const [input, setInput] = useState('');
     const [sending, setSending] = useState(false);
     const [showEscalation, setShowEscalation] = useState(false);
@@ -479,6 +605,12 @@ function ChatSection({ token }) {
         }
     }, []);
 
+    useEffect(() => {
+        if (recognitionRef.current) {
+            recognitionRef.current.lang = lang === 'es' ? 'es-ES' : lang === 'fr' ? 'fr-FR' : 'en-US';
+        }
+    }, [lang]);
+
     // Load voices so they are available when requested
     useEffect(() => {
         if (typeof window !== 'undefined' && window.speechSynthesis) {
@@ -522,7 +654,7 @@ function ChatSection({ token }) {
             const res = await fetch(`/api/patient/${token}/chat`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: userMsg }),
+                body: JSON.stringify({ message: userMsg, lang }),
             });
             const data = await res.json();
 
@@ -532,10 +664,10 @@ function ChatSection({ token }) {
                     setShowEscalation(true);
                 }
             } else {
-                setMessages(prev => [...prev, { role: 'assistant', content: data.error || 'Sorry, something went wrong. Please try again.', typed: false, spoken: false }]);
+                setMessages(prev => [...prev, { role: 'assistant', content: data.error || t.chatGenericError, typed: false, spoken: false }]);
             }
         } catch {
-            setMessages(prev => [...prev, { role: 'assistant', content: 'Connection error. Please try again.', typed: false, spoken: false }]);
+            setMessages(prev => [...prev, { role: 'assistant', content: t.chatConnectionError, typed: false, spoken: false }]);
         }
 
         setSending(false);
@@ -556,11 +688,11 @@ function ChatSection({ token }) {
 
     return (
         <section>
-            <h3 style={sec.heading}>💬 Study assistant</h3>
+            <h3 style={sec.heading}>{t.chatHeading}</h3>
 
             <div className="safety-banner" style={{ marginBottom: 12 }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
-                This assistant provides information about the study, not medical advice.
+                {t.chatDisclaimer}
             </div>
 
             <div className="chat-container">
@@ -577,8 +709,8 @@ function ChatSection({ token }) {
                             <div style={docStyle.docShadow} className={doctorActive ? 'doc-shadow-talk' : 'doc-shadow-idle'} />
                         </div>
                         <div style={docStyle.nameTag}>
-                            Dr. Lens
-                            <span style={docStyle.nameTagSub}>Study Assistant</span>
+                            {t.chatDoctorName}
+                            <span style={docStyle.nameTagSub}>{t.chatDoctorRole}</span>
                             <span style={docStyle.onlineDot} />
                         </div>
                     </div>
@@ -638,7 +770,7 @@ function ChatSection({ token }) {
                         <input
                             value={input}
                             onChange={(e) => setInput(e.target.value)}
-                            placeholder={isListening ? "Listening..." : "Ask Dr. Lens a question..."}
+                            placeholder={isListening ? t.chatListening : t.chatPlaceholder}
                             disabled={sending || isTyping}
                             style={{ paddingRight: '40px', width: '100%', backgroundColor: isListening ? '#f0fafe' : '#fff' }}
                         />
@@ -673,7 +805,7 @@ function ChatSection({ token }) {
                         </button>
                     </div>
                     <button type="submit" className="btn btn-primary btn-sm" disabled={sending || isTyping || (!input.trim() && !isListening)}>
-                        Send
+                        {t.chatSend}
                     </button>
                 </form>
             </div>
@@ -681,27 +813,27 @@ function ChatSection({ token }) {
             {/* Escalation */}
             {showEscalation && !escalated && (
                 <div className="card" style={{ marginTop: 12, borderColor: 'var(--color-secondary)', borderWidth: 2 }}>
-                    <h4 style={{ marginBottom: 8 }}>📞 Contact the clinical team</h4>
+                    <h4 style={{ marginBottom: 8 }}>{t.chatEscalationTitle}</h4>
                     <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 12 }}>
-                        If Dr. Lens couldn't fully answer your question, submit it to the clinical team for a personal response.
+                        {t.chatEscalationBody}
                     </p>
                     <textarea
                         className="form-textarea"
                         rows={3}
-                        placeholder="Type your question for the clinical team…"
+                        placeholder={t.chatEscalationPlaceholder}
                         value={escalationMsg}
                         onChange={(e) => setEscalationMsg(e.target.value)}
                     />
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
-                        <button className="btn btn-ghost btn-sm" onClick={() => setShowEscalation(false)}>Cancel</button>
-                        <button className="btn btn-primary btn-sm" onClick={submitEscalation} disabled={!escalationMsg.trim()}>Submit question</button>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setShowEscalation(false)}>{t.chatEscalationCancel}</button>
+                        <button className="btn btn-primary btn-sm" onClick={submitEscalation} disabled={!escalationMsg.trim()}>{t.chatEscalationSubmit}</button>
                     </div>
                 </div>
             )}
 
             {escalated && (
                 <div className="alert alert-success" style={{ marginTop: 12 }}>
-                    ✅ Your question has been submitted to the clinical team. They will respond as soon as possible.
+                    {t.chatEscalationSuccess}
                 </div>
             )}
 
@@ -774,7 +906,7 @@ function ChatSection({ token }) {
 }
 
 /* ─── Documents Section ─── */
-function DocumentsSection({ documents }) {
+function DocumentsSection({ documents, t }) {
     if (!documents || documents.length === 0) return null;
 
     const piSheet = documents.find(d => d.type === 'PI_SHEET');
@@ -782,11 +914,11 @@ function DocumentsSection({ documents }) {
 
     return (
         <section>
-            <h3 style={sec.heading}>📄 Study documents</h3>
+            <h3 style={sec.heading}>{t.documentsHeading}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {piSheet && (
                     <div className="card">
-                        <h4 style={{ fontSize: 'var(--text-base)', marginBottom: 8 }}>Participant Information Sheet</h4>
+                        <h4 style={{ fontSize: 'var(--text-base)', marginBottom: 8 }}>{t.docPISheet}</h4>
                         <iframe
                             src={`/api/uploads/${piSheet.filepath.replace('/uploads/', '')}`}
                             style={{ width: '100%', height: '400px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
@@ -797,13 +929,13 @@ function DocumentsSection({ documents }) {
                             className="btn btn-ghost btn-sm"
                             style={{ marginTop: 8 }}
                         >
-                            ⬇ Download {piSheet.filename}
+                            {t.docDownload} {piSheet.filename}
                         </a>
                     </div>
                 )}
                 {contract && (
                     <div className="card">
-                        <h4 style={{ fontSize: 'var(--text-base)', marginBottom: 8 }}>Patient Contract</h4>
+                        <h4 style={{ fontSize: 'var(--text-base)', marginBottom: 8 }}>{t.docContract}</h4>
                         <iframe
                             src={`/api/uploads/${contract.filepath.replace('/uploads/', '')}`}
                             style={{ width: '100%', height: '400px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)' }}
@@ -814,7 +946,7 @@ function DocumentsSection({ documents }) {
                             className="btn btn-ghost btn-sm"
                             style={{ marginTop: 8 }}
                         >
-                            ⬇ Download {contract.filename}
+                            {t.docDownload} {contract.filename}
                         </a>
                     </div>
                 )}
@@ -824,7 +956,7 @@ function DocumentsSection({ documents }) {
 }
 
 /* ─── Quiz Section ─── */
-function QuizSection({ questions, onPass, passed }) {
+function QuizSection({ questions, onPass, passed, t, lang }) {
     const [answers, setAnswers] = useState({});
     const [submitted, setSubmitted] = useState(false);
     const [score, setScore] = useState(0);
@@ -863,9 +995,9 @@ function QuizSection({ questions, onPass, passed }) {
         return (
             <section className="card" style={{ textAlign: 'center', borderColor: 'var(--color-success)', borderWidth: 2 }}>
                 <div style={{ fontSize: '2rem', marginBottom: 8 }}>✅</div>
-                <h3 style={{ color: 'var(--color-success)' }}>Comprehension quiz passed</h3>
+                <h3 style={{ color: 'var(--color-success)' }}>{t.quizPassedTitle}</h3>
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)' }}>
-                    You have demonstrated understanding of the trial information. You may now proceed to the consent section below.
+                    {t.quizPassedBody}
                 </p>
             </section>
         );
@@ -873,11 +1005,10 @@ function QuizSection({ questions, onPass, passed }) {
 
     return (
         <section>
-            <h3 style={sec.heading}>🧠 Comprehension quiz</h3>
+            <h3 style={sec.heading}>{t.quizHeading}</h3>
             <div className="card">
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 20, lineHeight: 'var(--leading-relaxed)' }}>
-                    Before providing your consent, please answer these questions to confirm you understand the key aspects of this trial.
-                    You need to answer at least <strong>{passingScore} out of {questions.length}</strong> correctly to proceed.
+                    {t.quizIntro(passingScore, questions.length)}
                 </p>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
@@ -895,10 +1026,10 @@ function QuizSection({ questions, onPass, passed }) {
                                         background: submitted ? (isCorrect ? 'var(--color-success)' : isWrong ? '#ef4444' : 'var(--color-primary)') : 'var(--color-primary)',
                                         color: '#fff', fontSize: '12px', fontWeight: 700, flexShrink: 0,
                                     }}>{qi + 1}</span>
-                                    {q.question}
+                                    {q.question[lang] || q.question.en || q.question}
                                 </p>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingLeft: 32 }}>
-                                    {q.options.map((opt, oi) => {
+                                    {(q.options[lang] || q.options.en || q.options).map((opt, oi) => {
                                         const isSelected = userAnswer === oi;
                                         const isCorrectOption = submitted && oi === q.correctIndex;
                                         const isWrongSelection = submitted && isSelected && oi !== q.correctIndex;
@@ -942,8 +1073,8 @@ function QuizSection({ questions, onPass, passed }) {
                                                     transition: 'all 0.2s',
                                                 }}>{String.fromCharCode(65 + oi)}</span>
                                                 {opt}
-                                                {isCorrectOption && <span style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--color-success)', fontWeight: 600 }}>✓ Correct</span>}
-                                                {isWrongSelection && <span style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: '#ef4444', fontWeight: 600 }}>✗ Incorrect</span>}
+                                                {isCorrectOption && <span style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: 'var(--color-success)', fontWeight: 600 }}>{t.quizCorrect}</span>}
+                                                {isWrongSelection && <span style={{ marginLeft: 'auto', fontSize: 'var(--text-xs)', color: '#ef4444', fontWeight: 600 }}>{t.quizIncorrect}</span>}
                                             </button>
                                         );
                                     })}
@@ -960,7 +1091,7 @@ function QuizSection({ questions, onPass, passed }) {
                         disabled={!allAnswered}
                         style={{ marginTop: 24, width: '100%' }}
                     >
-                        Submit answers
+                        {t.quizSubmit}
                     </button>
                 ) : (
                     <div style={{ marginTop: 24, textAlign: 'center', padding: '20px 0 8px' }}>
@@ -971,18 +1102,18 @@ function QuizSection({ questions, onPass, passed }) {
                             marginBottom: 8,
                         }}>
                             <span style={{ fontSize: '1.5rem' }}>{didPass ? '🎉' : '😕'}</span>
-                            {score} / {questions.length} correct
+                            {score} / {questions.length} {t.quizResultCorrect}
                         </div>
                         {didPass ? (
                             <p style={{ color: 'var(--color-success)', fontSize: 'var(--text-sm)' }}>
-                                Well done! You can now proceed to the consent section below.
+                                {t.quizWellDone}
                             </p>
                         ) : (
                             <>
                                 <p style={{ color: '#ef4444', fontSize: 'var(--text-sm)', marginBottom: 16 }}>
-                                    You need at least {passingScore} correct answers to proceed. Please review the study information and try again.
+                                    {t.quizRetryMsg(passingScore)}
                                 </p>
-                                <button className="btn btn-ghost" onClick={handleRetry}>↻ Retry quiz</button>
+                                <button className="btn btn-ghost" onClick={handleRetry}>{t.quizRetry}</button>
                             </>
                         )}
                     </div>
@@ -990,7 +1121,7 @@ function QuizSection({ questions, onPass, passed }) {
 
                 {!submitted && !allAnswered && (
                     <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', textAlign: 'center', marginTop: 8 }}>
-                        Please answer all {questions.length} questions to submit.
+                        {t.quizAnswerAll(questions.length)}
                     </p>
                 )}
             </div>
@@ -999,7 +1130,7 @@ function QuizSection({ questions, onPass, passed }) {
 }
 
 /* ─── Consent Section ─── */
-function ConsentSection({ token, data, quizPassed }) {
+function ConsentSection({ token, data, quizPassed, t }) {
     const [readUnderstood, setReadUnderstood] = useState(false);
     const [acceptTerms, setAcceptTerms] = useState(false);
     const [signatureName, setSignatureName] = useState('');
@@ -1009,7 +1140,6 @@ function ConsentSection({ token, data, quizPassed }) {
     const [isDrawing, setIsDrawing] = useState(false);
     const [hasDrawn, setHasDrawn] = useState(false);
 
-    // Signature pad drawing
     function startDraw(e) {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -1070,7 +1200,7 @@ function ConsentSection({ token, data, quizPassed }) {
         if (res.ok) {
             setSubmitted(true);
         } else {
-            alert('Failed to submit consent. Please try again.');
+            alert(t.consentSubmitFail);
         }
         setSubmitting(false);
     }
@@ -1079,13 +1209,12 @@ function ConsentSection({ token, data, quizPassed }) {
         return (
             <section className="card" style={{ textAlign: 'center', borderColor: 'var(--color-success)', borderWidth: 2 }}>
                 <div style={{ fontSize: '3rem', marginBottom: 8 }}>✅</div>
-                <h3 style={{ color: 'var(--color-success)' }}>Consent submitted successfully</h3>
+                <h3 style={{ color: 'var(--color-success)' }}>{t.consentSuccessTitle}</h3>
                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', marginTop: 8 }}>
-                    Thank you for providing your consent. The clinical research team has been notified.
-                    You will receive confirmation shortly.
+                    {t.consentSuccessBody}
                 </p>
                 <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-muted)', marginTop: 12 }}>
-                    Signed by: {signatureName} · {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}
+                    {t.consentSignedBy} {signatureName} · {new Date().toLocaleDateString()} {new Date().toLocaleTimeString()}
                 </p>
             </section>
         );
@@ -1094,12 +1223,12 @@ function ConsentSection({ token, data, quizPassed }) {
     if (!quizPassed) {
         return (
             <section>
-                <h3 style={sec.heading}>✍️ Consent and agreement</h3>
+                <h3 style={sec.heading}>{t.consentHeading}</h3>
                 <div className="card" style={{ textAlign: 'center', padding: '32px 24px' }}>
                     <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--color-bg-alt)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px', fontSize: '24px' }}>🔒</div>
-                    <h4 style={{ marginBottom: 8 }}>Complete the comprehension quiz first</h4>
+                    <h4 style={{ marginBottom: 8 }}>{t.consentLocked}</h4>
                     <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-muted)', maxWidth: 400, margin: '0 auto', lineHeight: 'var(--leading-relaxed)' }}>
-                        Please complete and pass the comprehension quiz above before providing your consent. This ensures you are fully informed about the trial.
+                        {t.consentLockedBody}
                     </p>
                 </div>
             </section>
@@ -1108,7 +1237,7 @@ function ConsentSection({ token, data, quizPassed }) {
 
     return (
         <section>
-            <h3 style={sec.heading}>✍️ Consent and agreement</h3>
+            <h3 style={sec.heading}>{t.consentHeading}</h3>
             <form className="card" onSubmit={handleSubmit}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                     <label className="form-checkbox">
@@ -1119,8 +1248,7 @@ function ConsentSection({ token, data, quizPassed }) {
                             required
                         />
                         <span style={{ fontSize: 'var(--text-sm)' }}>
-                            I have read and understood the information provided about this study,
-                            including the Participant Information Sheet and any other documents.
+                            {t.consentCheck1}
                         </span>
                     </label>
 
@@ -1132,16 +1260,15 @@ function ConsentSection({ token, data, quizPassed }) {
                             required
                         />
                         <span style={{ fontSize: 'var(--text-sm)' }}>
-                            I accept the terms in the patient contract and agree to participate in this study voluntarily.
-                            I understand I can withdraw at any time without giving a reason.
+                            {t.consentCheck2}
                         </span>
                     </label>
 
                     <div className="form-group">
-                        <label className="form-label">Full name (typed signature)</label>
+                        <label className="form-label">{t.consentNameLabel}</label>
                         <input
                             className="form-input"
-                            placeholder="Enter your full name"
+                            placeholder={t.consentNamePlaceholder}
                             value={signatureName}
                             onChange={(e) => setSignatureName(e.target.value)}
                             required
@@ -1149,7 +1276,7 @@ function ConsentSection({ token, data, quizPassed }) {
                     </div>
 
                     <div className="form-group">
-                        <label className="form-label">Drawn signature (optional)</label>
+                        <label className="form-label">{t.consentDrawnLabel}</label>
                         <canvas
                             ref={canvasRef}
                             width={400}
@@ -1166,13 +1293,13 @@ function ConsentSection({ token, data, quizPassed }) {
                         />
                         {hasDrawn && (
                             <button type="button" className="btn btn-ghost btn-sm" style={{ marginTop: 4 }} onClick={clearSignature}>
-                                Clear signature
+                                {t.consentClearSig}
                             </button>
                         )}
                     </div>
 
                     <div style={{ background: 'var(--color-bg-alt)', padding: 12, borderRadius: 'var(--radius-md)', fontSize: 'var(--text-xs)', color: 'var(--color-muted)' }}>
-                        <strong>Date:</strong> {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        <strong>{t.consentDate}</strong> {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                     </div>
 
                     <button
@@ -1181,7 +1308,7 @@ function ConsentSection({ token, data, quizPassed }) {
                         disabled={!readUnderstood || !acceptTerms || !signatureName || submitting}
                         style={{ width: '100%' }}
                     >
-                        {submitting ? 'Submitting…' : 'Submit consent'}
+                        {submitting ? t.consentSubmitting : t.consentSubmit}
                     </button>
                 </div>
             </form>
