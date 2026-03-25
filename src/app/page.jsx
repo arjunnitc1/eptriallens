@@ -120,7 +120,7 @@ export default function LandingPage() {
                         ))}
                     </div>
                     <p style={s.statsDisclaimer}>
-                        ⓘ Example metrics for illustration only. These are not proven claims. Customise with your own data.
+                        ⓘ Estimated metrics. These are not proven claims.
                     </p>
                 </div>
             </section>
